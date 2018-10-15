@@ -4,7 +4,7 @@
   cc-by 4.0
   Nick TUckett
 
-  Random Sequencer
+  Random Sequencer: Turing Machine module emulation
 */
 #include <avr/pgmspace.h>
 #include <PureDigit.h>
@@ -39,6 +39,27 @@ bool noteUpdated = 0;
 bool lastSwitchState = 0;
 const char* currentScale = majorScale;
 
+uint16_t shiftRegister = 0;
+int shiftRandomThreshold = 16384;
+
+void stepShiftRegister() {
+  uint16_t lastBit = shiftRegister & 0x8000;
+  shiftRegister <<= 1;
+  int randomChoice = random(32768);
+  if (randomChoice < shiftRandomThreshold) {
+    lastBit = ~lastBit & 0x8000;
+  }
+  shiftRegister |= lastBit >> 15;
+}
+
+int shiftRegisterToNote() {
+  uint16_t activeBits = shiftRegister & 2047;
+  uint16_t fixedValue = activeBits << 5;
+  fixedValue /= 17;                           // make this higher e.g. 120 to limit the size of scale
+  fixedValue += 0x10;
+  return (int)(fixedValue >> 5);
+}
+
 void setup() {
   digit.dontCalibrate();
   digit.begin();
@@ -50,8 +71,9 @@ void setup() {
   TCCR1B = 0;
   TCNT1  = 0;
 
-//  OCR1A = 19532;                          // compare match register 20MHz/1024/1Hz = 19532 (1 tick is 51.2 uSec)
-  OCR1A = 4883;                           // compare match register 20MHz/1024/1Hz = 19532 (1 tick is 51.2 uSec)
+  // (1 tick is 51.2 uSec)
+//  OCR1A = 19532;                          // compare match register 20MHz/1024/1Hz = 19532
+  OCR1A = 4883;                           // compare match register 20MHz/1024/4Hz = 4883
   TIMSK1 |= (1 << OCIE1A);                // enable timer compare interrupt
   interrupts();                           // enable all interrupts  
 }
@@ -71,7 +93,8 @@ void stopTimer() {
 }
 
 void selectNextNote(const char* scale) {
-  int note = random(61);
+  stepShiftRegister();
+  int note = shiftRegisterToNote();
   int octave = note / 12;
   int semitone = note % 12;
 
