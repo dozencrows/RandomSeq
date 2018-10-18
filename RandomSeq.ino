@@ -53,7 +53,8 @@ void stepShiftRegister() {
 }
 
 int shiftRegisterToNote() {
-  uint16_t activeBits = shiftRegister & 2047;
+  //uint16_t activeBits = shiftRegister & 2047;
+  uint16_t activeBits = ((shiftRegister & 255) << 3) + 0x100;  // 8-bits for full 10V range, like MTM Turing Machine
   uint16_t fixedValue = activeBits << 5;
   fixedValue /= 17;                           // make this higher e.g. 120 to limit the size of scale
   fixedValue += 0x10;
