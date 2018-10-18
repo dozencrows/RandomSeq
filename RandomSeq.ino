@@ -2,9 +2,90 @@
   GMSN! Pure Digit
   14 October 2018
   cc-by 4.0
-  Nick TUckett
+  Nick Tuckett
 
   Random Sequencer: Turing Machine module emulation
+
+  User interface:
+  - In1: threshold
+  - In2: clock
+  - Out: cv out
+  - Encoder:  multiple modes, stepped through by presses:
+    - Mode 1: threshold        - position based
+    - Mode 2: output scale     - position based
+    - Mode 3: write            - turn left writes 0, turn right writes 1
+    - Mode 4: quantising scale - position based
+
+  Elements:
+  - Clock handler:  1kHz timer interrupt that reads In2, looking for edge. When edge found, it
+                    outputs next CV value and sets step flag
+  - Shift register: maintains shift register state, with properties:
+                      - scale
+                      - length
+                      - random threshold
+                    and methods
+                      - step
+                      - get value
+  - Quantiser:      maps an input value to an output value. Properties:
+                      - scale
+                    and methods
+                      - quantise
+  - Main loop:      if step flag set:
+                      - clear step flag
+                      - if encoder press detected
+                        - advance UI mode
+                      - process current UI mode
+                      - step shift register and get output
+                      - get value and quantise
+                      - set as next CV out
+  - UI mode 1 handler
+    - init:
+      - set pos to middle (5)
+    - select:
+      - 
+    - process:
+      - update position from encoder
+      - display position
+      - calculate threshold from position and set on shift reg
+
+  - UI mode 2 handler    
+    - init:
+      - set value to max (9)
+    - select:
+      - 
+    - process:
+      - update value from encoder
+      - display digit
+      - calculate scale from value and set on shift reg
+
+  - UI mode 3 handler    
+    - init:
+      - 
+    - select:
+      - set position to middle (5)
+    - process:
+      - set value to 0
+      - update value from encoder
+      - if value is -1
+        - write 0 into shift register
+        - set position to 3
+      - if value is 1
+        - write 1 into shift register
+        - set position to 7
+      - if value is 0
+        - set position to 5
+
+  - UI mode 4 handler    
+    - init:
+      - set value to min (0)
+    - select:
+      - 
+    - process:
+      - update value from encoder
+      - display digit
+      - use value to select scale and set on quantiser
+
+
 */
 #include <avr/pgmspace.h>
 #include <PureDigit.h>
@@ -53,8 +134,8 @@ void stepShiftRegister() {
 }
 
 int shiftRegisterToNote() {
-  //uint16_t activeBits = shiftRegister & 2047;
-  uint16_t activeBits = ((shiftRegister & 255) << 3) + 0x100;  // 8-bits for full 10V range, like MTM Turing Machine
+  // 8-bits for full 10V range, like MTM Turing Machine
+  uint16_t activeBits = ((shiftRegister & 255) << 3) + 0x100;
   uint16_t fixedValue = activeBits << 5;
   fixedValue /= 17;                           // make this higher e.g. 120 to limit the size of scale
   fixedValue += 0x10;
