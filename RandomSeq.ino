@@ -89,8 +89,10 @@
 */
 #include <avr/pgmspace.h>
 #include <PureDigit.h>
+#include "ShiftRegister.h"
 
 PureDigit digit;
+ShiftRegister shiftRegister;
 
 //Setup variables
 int encPos = 0;
@@ -119,28 +121,6 @@ int noteIndex = 0;
 bool noteUpdated = 0;
 bool lastSwitchState = 0;
 const char* currentScale = majorScale;
-
-uint16_t shiftRegister = 0;
-int shiftRandomThreshold = 16384;
-
-void stepShiftRegister() {
-  uint16_t lastBit = shiftRegister & 0x8000;
-  shiftRegister <<= 1;
-  int randomChoice = random(32768);
-  if (randomChoice < shiftRandomThreshold) {
-    lastBit = ~lastBit & 0x8000;
-  }
-  shiftRegister |= lastBit >> 15;
-}
-
-int shiftRegisterToNote() {
-  // 8-bits for full 10V range, like MTM Turing Machine
-  uint16_t activeBits = ((shiftRegister & 255) << 3) + 0x100;
-  uint16_t fixedValue = activeBits << 5;
-  fixedValue /= 17;                           // make this higher e.g. 120 to limit the size of scale
-  fixedValue += 0x10;
-  return (int)(fixedValue >> 5);
-}
 
 void setup() {
   digit.dontCalibrate();
@@ -175,8 +155,8 @@ void stopTimer() {
 }
 
 void selectNextNote(const char* scale) {
-  stepShiftRegister();
-  int note = shiftRegisterToNote();
+  shiftRegister.step();
+  int note = shiftRegister.getNote();
   int octave = note / 12;
   int semitone = note % 12;
 
