@@ -159,11 +159,18 @@ void loop() {
   if (digit.getSwitchState() != 0) {
     if (!lastSwitchState) {
       lastSwitchState = 1;
-//      if (currentScale == majorScale) {
-//        currentScale = minorScale;
-//      } else {
-//        currentScale = majorScale;
-//      }
+      switch (scale) {
+        case Quantiser::Scale::CHROMATIC:
+          scale = Quantiser::Scale::MAJOR;
+          break;
+        case Quantiser::Scale::MAJOR:
+          scale = Quantiser::Scale::MINOR;
+          break;
+        case Quantiser::Scale::MINOR:
+          scale = Quantiser::Scale::CHROMATIC;
+          break;
+      }
+      quantiser.setScale(scale);
     }
   } else {
     lastSwitchState = 0;
