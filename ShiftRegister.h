@@ -8,16 +8,20 @@
 
 class ShiftRegister {
   public:
+    enum { 
+      MAX_THRESHOLD = 32768
+    };
+    
     void step();
     int getNote();
     void write(bool value);
 
-    void setThreshold(int threshold);
+    void setThreshold(long threshold);
     void setScale(int scale);
 
   private:
     uint16_t value_ = 0;
-    int threshold_ = 16384;
+    long threshold_ = 16384L;
     // scale
 };
 

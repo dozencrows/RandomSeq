@@ -5,7 +5,7 @@
 void ShiftRegister::step() {
   uint16_t lastBit = value_ & 0x8000;
   value_ <<= 1;
-  int randomChoice = random(32768);
+  long randomChoice = random(32768L);
   if (randomChoice < threshold_) {
     lastBit = ~lastBit & 0x8000;
   }
@@ -25,8 +25,8 @@ void ShiftRegister::write(bool value) {
   
 }
 
-void ShiftRegister::setThreshold(int threshold) {
-  
+void ShiftRegister::setThreshold(long threshold) {
+  threshold_ = threshold;
 }
 
 void ShiftRegister::setScale(int scale) {

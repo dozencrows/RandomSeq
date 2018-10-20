@@ -90,10 +90,50 @@
 #include <PureDigit.h>
 #include "ShiftRegister.h"
 #include "Quantiser.h"
+#include "UIState.h"
+
+class UIStateThreshold : public UIState {
+  enum { 
+    MAX_ENCODER_POS = 23
+  };
+  
+  public:
+    UIStateThreshold(PureDigit& digit, ShiftRegister& shiftRegister, Quantiser& quantiser)
+      : UIState(digit, shiftRegister, quantiser) {}
+
+    void init() {
+      encPos = (MAX_ENCODER_POS + 1) / 2;
+    }
+
+    void select() {
+      display();
+    }
+
+    void update() {
+      int newEncPos = digit_.encodeVal(encPos);
+      newEncPos = constrain(newEncPos, 0, MAX_ENCODER_POS);
+
+      if (newEncPos != encPos) {
+        encPos = newEncPos;
+        display();
+        
+        long newThreshold = ShiftRegister::MAX_THRESHOLD * (long)encPos / MAX_ENCODER_POS;
+        shiftRegister_.setThreshold(newThreshold);
+      }
+    }
+
+  private:
+    int encPos;
+
+    void display() {
+      digit_.displayLED(encPos / 2, 0, encPos == 0 || encPos == MAX_ENCODER_POS);
+    }
+};
 
 PureDigit digit;
 ShiftRegister shiftRegister;
 Quantiser quantiser;
+UIStateThreshold thresholdState(digit, shiftRegister, quantiser);
 
 int encPos = 0;
 int lastEncPos = 0;
@@ -110,6 +150,7 @@ void setup() {
   digit.begin();
   digit.dacWrite(quantiser.getCV());
   selectNextNote();
+  thresholdState.init();
   
   noInterrupts();           // disable all interrupts
   TCCR1A = 0;
@@ -118,9 +159,12 @@ void setup() {
 
   // (1 tick is 51.2 uSec)
 //  OCR1A = 19532;                          // compare match register 20MHz/1024/1Hz = 19532
-  OCR1A = 4883;                           // compare match register 20MHz/1024/4Hz = 4883
+  OCR1A = 3000;                           // compare match register 20MHz/1024/4Hz = 4883
   TIMSK1 |= (1 << OCIE1A);                // enable timer compare interrupt
   interrupts();                           // enable all interrupts  
+
+  startTimer();
+  thresholdState.select();
 }
 
 ISR(TIMER1_COMPA_vect) {
@@ -153,9 +197,6 @@ void showNote(int semitone) {
 }
 
 void loop() {
-  encPos = digit.encodeVal(encPos);
-  encPos = constrain(encPos, 0, 1);
-
   if (digit.getSwitchState() != 0) {
     if (!lastSwitchState) {
       lastSwitchState = 1;
@@ -176,24 +217,13 @@ void loop() {
     lastSwitchState = 0;
   }
 
-  if (encPos == 1) {
-    if (!lastEncPos) {
-      startTimer();
-    }
-    if (noteUpdated) {
-      noteUpdated = 0;
-      noteIndex = nextNoteIndex;      
-      selectNextNote();
-    }
-  } else {
-    if (lastEncPos) {
-      stopTimer();
-    }
-    noteUpdated = 0;
-  }
+  thresholdState.update();
   
-  showNote(noteIndex);
-  lastEncPos = encPos;
+  if (noteUpdated) {
+    noteUpdated = 0;
+    noteIndex = nextNoteIndex;      
+    selectNextNote();
+  }
 
   delay(10);
 }
