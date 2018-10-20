@@ -7,12 +7,12 @@
   Random Sequencer: Turing Machine module emulation
 
   User interface:
-  - In1: threshold
-  - In2: clock
+  - In1: clock
+  - In2: threshold
   - Out: cv out
   - Encoder:  multiple modes, stepped through by presses:
     - Mode 1: threshold        - position based
-    - Mode 2: output scale     - position based
+    - Mode 2: output octaves   - digit based
     - Mode 3: write            - turn left writes 0, turn right writes 1
     - Mode 4: quantising scale - position based
 
@@ -175,6 +175,7 @@ UIState* currentUIState;
 
 Quantiser::Scale scale = Quantiser::Scale::MAJOR;
 
+int lastClockValue = 0;
 int nextNoteIndex = 0;
 int nextCvOut = 0;
 int noteIndex = 0;
@@ -198,8 +199,7 @@ void setup() {
   TCNT1  = 0;
 
   // (1 tick is 51.2 uSec)
-//  OCR1A = 19532;                          // compare match register 20MHz/1024/1Hz = 19532
-  OCR1A = 3000;                           // compare match register 20MHz/1024/4Hz = 4883
+  OCR1A = 38;                             // Approx 500Hz timer
   TIMSK1 |= (1 << OCIE1A);                // enable timer compare interrupt
   interrupts();                           // enable all interrupts  
 
@@ -208,8 +208,13 @@ void setup() {
 }
 
 ISR(TIMER1_COMPA_vect) {
-  digit.dacWrite(nextCvOut);
-  noteUpdated = 1;
+  // Clock triggers next note on falling edge, threshold around -2.5V
+  int clock = -(digit.adcRead(0) - 2048);
+  if (clock < -512 && lastClockValue > 0) {
+    digit.dacWrite(nextCvOut);
+    noteUpdated = 1;
+  }
+  lastClockValue = clock;
 }
 
 void startTimer() {
@@ -238,19 +243,6 @@ void loop() {
         currentUIState = &thresholdState;
       }
       currentUIState->select();
-      
-//      switch (scale) {
-//        case Quantiser::Scale::CHROMATIC:
-//          scale = Quantiser::Scale::MAJOR;
-//          break;
-//        case Quantiser::Scale::MAJOR:
-//          scale = Quantiser::Scale::MINOR;
-//          break;
-//        case Quantiser::Scale::MINOR:
-//          scale = Quantiser::Scale::CHROMATIC;
-//          break;
-//      }
-//      quantiser.setScale(scale);
     }
   } else {
     lastSwitchState = 0;
@@ -264,5 +256,5 @@ void loop() {
     selectNextNote();
   }
 
-  delay(10);
+  delay(1);
 }
