@@ -1,6 +1,11 @@
 #include "ShiftRegister.h"
-
 #include <Arduino.h>
+#include <avr/pgmspace.h>
+
+// Divisors to scale the full 2047 across 1 to 10 octaves
+static const uint16_t scaleDivisors[] PROGMEM = {
+  170, 85, 57, 43, 34, 28, 24, 21, 19, 17
+};
 
 void ShiftRegister::step() {
   uint16_t lastBit = value_ & 0x8000;
@@ -13,10 +18,10 @@ void ShiftRegister::step() {
 }
 
 int ShiftRegister::getNote() {
-  // 8-bits for full 10V range, like MTM Turing Machine
+  // 8-bits for full 10 octave range, like MTM Turing Machine
   uint16_t activeBits = ((value_ & 255) << 3) + 0x100;
   uint16_t fixedValue = activeBits << 5;
-  fixedValue /= 17;                           // make this higher e.g. 120 to limit the size of scale
+  fixedValue /= scaleDivisor_;
   fixedValue += 0x10;
   return (int)(fixedValue >> 5);
 }
@@ -30,5 +35,5 @@ void ShiftRegister::setThreshold(long threshold) {
 }
 
 void ShiftRegister::setScale(int scale) {
-  
+  scaleDivisor_ = pgm_read_word_near(scaleDivisors + scale);
 }

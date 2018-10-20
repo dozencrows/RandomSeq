@@ -130,14 +130,50 @@ class UIStateThreshold : public UIState {
     }
 };
 
+class UIStateScale : public UIState {
+  enum { 
+    MAX_ENCODER_POS = 9
+  };
+  
+  public:
+    UIStateScale(PureDigit& digit, ShiftRegister& shiftRegister, Quantiser& quantiser)
+      : UIState(digit, shiftRegister, quantiser) {}
+
+    void init() {
+      encPos = MAX_ENCODER_POS;
+    }
+
+    void select() {
+      display();
+    }
+
+    void update() {
+      int newEncPos = digit_.encodeVal(encPos);
+      newEncPos = constrain(newEncPos, 0, MAX_ENCODER_POS);
+
+      if (newEncPos != encPos) {
+        encPos = newEncPos;
+        display();
+        shiftRegister_.setScale(encPos);
+      }
+    }
+
+  private:
+    int encPos;
+
+    void display() {
+      digit_.displayLED(encPos, 1, 0);
+    }
+};
+
 PureDigit digit;
 ShiftRegister shiftRegister;
 Quantiser quantiser;
 UIStateThreshold thresholdState(digit, shiftRegister, quantiser);
+UIStateScale scaleState(digit, shiftRegister, quantiser);
+UIState* currentUIState;
 
-int encPos = 0;
-int lastEncPos = 0;
-Quantiser::Scale scale = Quantiser::Scale::CHROMATIC;
+Quantiser::Scale scale = Quantiser::Scale::MAJOR;
 
 int nextNoteIndex = 0;
 int nextCvOut = 0;
@@ -149,8 +185,12 @@ void setup() {
   digit.dontCalibrate();
   digit.begin();
   digit.dacWrite(quantiser.getCV());
+  quantiser.setScale(scale);
   selectNextNote();
+  
   thresholdState.init();
+  scaleState.init();
+  currentUIState = &thresholdState;
   
   noInterrupts();           // disable all interrupts
   TCCR1A = 0;
@@ -188,36 +228,35 @@ void selectNextNote() {
   nextNoteIndex = quantiser.getSemitone();
 }
 
-void showNote(int semitone) {
-  if (semitone < 10) {
-    digit.displayLED(semitone, 1, 0);
-  } else {
-    digit.displayLED(semitone - 10, 1, 1);
-  } 
-}
-
 void loop() {
   if (digit.getSwitchState() != 0) {
     if (!lastSwitchState) {
       lastSwitchState = 1;
-      switch (scale) {
-        case Quantiser::Scale::CHROMATIC:
-          scale = Quantiser::Scale::MAJOR;
-          break;
-        case Quantiser::Scale::MAJOR:
-          scale = Quantiser::Scale::MINOR;
-          break;
-        case Quantiser::Scale::MINOR:
-          scale = Quantiser::Scale::CHROMATIC;
-          break;
+      if (currentUIState == &thresholdState) {
+        currentUIState = &scaleState;
+      } else {
+        currentUIState = &thresholdState;
       }
-      quantiser.setScale(scale);
+      currentUIState->select();
+      
+//      switch (scale) {
+//        case Quantiser::Scale::CHROMATIC:
+//          scale = Quantiser::Scale::MAJOR;
+//          break;
+//        case Quantiser::Scale::MAJOR:
+//          scale = Quantiser::Scale::MINOR;
+//          break;
+//        case Quantiser::Scale::MINOR:
+//          scale = Quantiser::Scale::CHROMATIC;
+//          break;
+//      }
+//      quantiser.setScale(scale);
     }
   } else {
     lastSwitchState = 0;
   }
 
-  thresholdState.update();
+  currentUIState->update();
   
   if (noteUpdated) {
     noteUpdated = 0;

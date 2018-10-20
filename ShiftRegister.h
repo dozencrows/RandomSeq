@@ -22,7 +22,7 @@ class ShiftRegister {
   private:
     uint16_t value_ = 0;
     long threshold_ = 16384L;
-    // scale
+    uint16_t scaleDivisor_ = 17;
 };
 
 #endif
