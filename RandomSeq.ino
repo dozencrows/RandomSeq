@@ -13,11 +13,12 @@
   - Encoder:  multiple modes, stepped through by presses:
     - Mode 1: threshold        - position based
     - Mode 2: output octaves   - digit based
-    - Mode 3: write            - turn left writes 0, turn right writes 1
-    - Mode 4: quantising scale - position based
+    - Mode 3: clocks per step  - 1, 2, 24 or 48
+    - Mode 4: write            - turn left writes 0, turn right writes 1
+    - Mode 5: quantising scale - position based
 
   Elements:
-  - Clock handler:  1kHz timer interrupt that reads In2, looking for edge. When edge found, it
+  - Clock handler:  500Hz timer interrupt that reads In1, looking for edge. When edge found, it
                     outputs next CV value and sets step flag
   - Shift register: maintains shift register state, with properties:
                       - scale
@@ -60,6 +61,16 @@
 
   - UI mode 3 handler    
     - init:
+      - set value to max (3)
+    - select:
+      - 
+    - process:
+      - update value from encoder
+      - display digit
+      - calculate clock divisor from value and set on clock
+
+  - UI mode 4 handler    
+    - init:
       - 
     - select:
       - set position to middle (5)
@@ -75,7 +86,7 @@
       - if value is 0
         - set position to 5
 
-  - UI mode 4 handler    
+  - UI mode 5 handler    
     - init:
       - set value to min (0)
     - select:
