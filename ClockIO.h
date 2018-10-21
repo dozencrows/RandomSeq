@@ -30,33 +30,44 @@ class ClockIO {
       TCCR1B = 0;
     }
 
+    void setClockDivisor(int clockDivisor) {
+      clockDivisor_ = clockDivisor;
+      clockCount_ = 0;
+    }
+
     void setNextCvOut(int cvOut) {
       nextCvOut = cvOut;
     }
 
-    bool hasClockTicked() {
-      return clockTicked;
+    bool hasStepTicked() {
+      return stepTicked_;
     }
 
-    void ackClockTick() {
-      clockTicked = false;
+    void ackStepTick() {
+      stepTicked_ = false;
     }
 
     void update() {
-      // Clock triggers next note on falling edge, threshold around 2.5V
+      // Clock triggers next note on rising edge, threshold around 2.5V
       int clock = -(digit_.adcRead(0) - 2048);
-      if (clock < 400 && lastClock > 512) {
-        digit_.dacWrite(nextCvOut);
-        clockTicked = true;
+      if (clock > 512 && lastClock < 400) {
+        clockCount_++;
+        if (clockCount_ >= clockDivisor_) {
+          clockCount_ = 0;
+          digit_.dacWrite(nextCvOut);
+          stepTicked_ = true;
+        }
       }
       lastClock = clock;
     }
 
   private:
     PureDigit& digit_;
-    bool clockTicked = 0;
+    bool stepTicked_ = false;
     int nextCvOut = 0;
     int lastClock = 0;  
+    int clockDivisor_ = 1;
+    int clockCount_ = 0;
 };
 
 #endif

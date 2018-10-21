@@ -173,6 +173,50 @@ class UIStateScale : public UIState {
     }
 };
 
+//
+// UI state to manage control of clock scale
+//
+class UIStateClockSteps : public UIState {
+  enum { 
+    MAX_ENCODER_POS = 3
+  };
+  
+  public:
+    UIStateClockSteps(PureDigit& digit, ShiftRegister& shiftRegister, Quantiser& quantiser, ClockIO& clockIO)
+      : UIState(digit, shiftRegister, quantiser), clockIO_(clockIO) {}
+
+    void init() {
+      encPos = 3;
+      clockIO_.setClockDivisor(clocksPerStep_[encPos]);
+    }
+
+    void select() {
+      display();
+    }
+
+    void update() {
+      int newEncPos = digit_.encodeVal(encPos);
+      newEncPos = constrain(newEncPos, 0, MAX_ENCODER_POS);
+
+      if (newEncPos != encPos) {
+        encPos = newEncPos;
+        display();
+        clockIO_.setClockDivisor(clocksPerStep_[encPos]);
+      }
+    }
+
+  private:
+    int encPos;
+    ClockIO& clockIO_;
+    static int clocksPerStep_[4];
+
+    void display() {
+      digit_.displayLED(encPos, 1, 0);
+    }
+};
+
+int UIStateClockSteps::clocksPerStep_[4] = { 1, 2, 24, 48 };
+
 PureDigit digit;
 ShiftRegister shiftRegister;
 Quantiser quantiser;
@@ -180,28 +224,30 @@ ClockIO clockIO(digit);
 
 UIStateThreshold thresholdState(digit, shiftRegister, quantiser);
 UIStateScale scaleState(digit, shiftRegister, quantiser);
-UIState* currentUIState;
+UIStateClockSteps clockStepsState(digit, shiftRegister, quantiser, clockIO);
 
-Quantiser::Scale scale = Quantiser::Scale::MAJOR;
+UIState* uiStates[] = { &thresholdState, &scaleState, &clockStepsState };
+
+int currentUIMode = 0;
 
 int nextNoteIndex = 0;
 int noteIndex = 0;
-bool lastSwitchState = 0;
+int debounceCount = 0;
+bool switchDownCheck = false;
 
 void setup() {
   digit.dontCalibrate();
   digit.begin();
   digit.dacWrite(quantiser.getCV());
-  quantiser.setScale(scale);
+  quantiser.setScale(Quantiser::Scale::MAJOR);
   selectNextNote();
   clockIO.init();
   
   thresholdState.init();
   scaleState.init();
-  currentUIState = &thresholdState;
   
   clockIO.start();
-  thresholdState.select();
+  uiStates[0]->select();
 }
 
 ISR(TIMER1_COMPA_vect) {
@@ -216,27 +262,34 @@ void selectNextNote() {
 }
 
 void loop() {
-  if (digit.getSwitchState() != 0) {
-    if (!lastSwitchState) {
-      lastSwitchState = 1;
-      if (currentUIState == &thresholdState) {
-        currentUIState = &scaleState;
+  UIState* currentUIState = uiStates[currentUIMode];
+
+  if (digit.getSwitchState() != 0 && !switchDownCheck) {
+    debounceCount = 20;
+    switchDownCheck = true;
+  } else if (debounceCount > 0) {
+    debounceCount--;
+    if (debounceCount == 0) {
+      if (digit.getSwitchState() != 0) {
+        currentUIMode++;
+        if (currentUIMode >= sizeof(uiStates) / sizeof(UIState*)) {
+          currentUIMode = 0;
+        }
+        currentUIState = uiStates[currentUIMode];
+        currentUIState->select();
       } else {
-        currentUIState = &thresholdState;
+        switchDownCheck = false;
       }
-      currentUIState->select();
     }
-  } else {
-    lastSwitchState = 0;
+  } else if (switchDownCheck && digit.getSwitchState() == 0) {
+    switchDownCheck = false;
   }
 
   currentUIState->update();
   
-  if (clockIO.hasClockTicked()) {
-    clockIO.ackClockTick();
+  if (clockIO.hasStepTicked()) {
+    clockIO.ackStepTick();
     noteIndex = nextNoteIndex;      
     selectNextNote();
   }
-
-  delay(1);
 }
