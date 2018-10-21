@@ -90,8 +90,12 @@
 #include <PureDigit.h>
 #include "ShiftRegister.h"
 #include "Quantiser.h"
+#include "ClockIO.h"
 #include "UIState.h"
 
+//
+// UI state to manage control of random threshold
+//
 class UIStateThreshold : public UIState {
   enum { 
     MAX_ENCODER_POS = 23
@@ -130,6 +134,9 @@ class UIStateThreshold : public UIState {
     }
 };
 
+//
+// UI state to manage control of output scale in octaves
+//
 class UIStateScale : public UIState {
   enum { 
     MAX_ENCODER_POS = 9
@@ -169,17 +176,16 @@ class UIStateScale : public UIState {
 PureDigit digit;
 ShiftRegister shiftRegister;
 Quantiser quantiser;
+ClockIO clockIO(digit);
+
 UIStateThreshold thresholdState(digit, shiftRegister, quantiser);
 UIStateScale scaleState(digit, shiftRegister, quantiser);
 UIState* currentUIState;
 
 Quantiser::Scale scale = Quantiser::Scale::MAJOR;
 
-int lastClockValue = 0;
 int nextNoteIndex = 0;
-int nextCvOut = 0;
 int noteIndex = 0;
-bool noteUpdated = 0;
 bool lastSwitchState = 0;
 
 void setup() {
@@ -188,48 +194,24 @@ void setup() {
   digit.dacWrite(quantiser.getCV());
   quantiser.setScale(scale);
   selectNextNote();
+  clockIO.init();
   
   thresholdState.init();
   scaleState.init();
   currentUIState = &thresholdState;
   
-  noInterrupts();           // disable all interrupts
-  TCCR1A = 0;
-  TCCR1B = 0;
-  TCNT1  = 0;
-
-  // (1 tick is 51.2 uSec)
-  OCR1A = 38;                             // Approx 500Hz timer
-  TIMSK1 |= (1 << OCIE1A);                // enable timer compare interrupt
-  interrupts();                           // enable all interrupts  
-
-  startTimer();
+  clockIO.start();
   thresholdState.select();
 }
 
 ISR(TIMER1_COMPA_vect) {
-  // Clock triggers next note on falling edge, threshold around -2.5V
-  int clock = -(digit.adcRead(0) - 2048);
-  if (clock < -512 && lastClockValue > 0) {
-    digit.dacWrite(nextCvOut);
-    noteUpdated = 1;
-  }
-  lastClockValue = clock;
-}
-
-void startTimer() {
-  TCCR1B |= (1 << WGM12);                 // CTC mode
-  TCCR1B |= (1 << CS10) | (1 << CS12);    // 1024 prescaler
-}
-
-void stopTimer() {
-  TCCR1B = 0;
+  clockIO.update();
 }
 
 void selectNextNote() {
   shiftRegister.step();
   quantiser.setNote(shiftRegister.getNote());
-  nextCvOut = quantiser.getCV();
+  clockIO.setNextCvOut(quantiser.getCV());
   nextNoteIndex = quantiser.getSemitone();
 }
 
@@ -250,8 +232,8 @@ void loop() {
 
   currentUIState->update();
   
-  if (noteUpdated) {
-    noteUpdated = 0;
+  if (clockIO.hasClockTicked()) {
+    clockIO.ackClockTick();
     noteIndex = nextNoteIndex;      
     selectNextNote();
   }
