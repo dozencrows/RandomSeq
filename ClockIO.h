@@ -16,7 +16,7 @@ class ClockIO {
       TCNT1  = 0;
     
       // (1 tick is 51.2 uSec)
-      OCR1A = 38;                             // Approx 500Hz timer
+      OCR1A = 19;                             // Approx 1KHz timer
       TIMSK1 |= (1 << OCIE1A);                // enable timer compare interrupt
       interrupts();                           // enable all interrupts  
     }
@@ -48,9 +48,9 @@ class ClockIO {
     }
 
     void update() {
-      // Clock triggers next note on rising edge, threshold around 2.5V
-      int clock = -(digit_.adcRead(0) - 2048);
-      if (clock > 512 && lastClock < 400) {
+      int clock = digit_.adcRead(0);
+      // Clock triggers next note on rising edge, threshold around 0.5V
+      if (clock < 2000 && lastClock > 2048) {
         clockCount_++;
         if (clockCount_ >= clockDivisor_) {
           clockCount_ = 0;

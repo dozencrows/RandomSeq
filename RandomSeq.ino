@@ -165,22 +165,27 @@ class UIStateScale : public UIState {
       display();
     }
 
+    void newNote() {
+      decimalPoint ^= 1;
+    }
+
     void update() {
       int newEncPos = digit_.encodeVal(encPos);
       newEncPos = constrain(newEncPos, 0, MAX_ENCODER_POS);
 
       if (newEncPos != encPos) {
         encPos = newEncPos;
-        display();
         shiftRegister_.setScale(encPos);
       }
+      display();
     }
 
   private:
     int encPos;
+    char decimalPoint = 0;
 
     void display() {
-      digit_.displayLED(encPos, 1, 0);
+      digit_.displayLED(encPos, 1, decimalPoint);
     }
 };
 
@@ -241,8 +246,6 @@ UIState* uiStates[] = { &thresholdState, &scaleState, &clockStepsState };
 
 int currentUIMode = 0;
 
-int nextNoteIndex = 0;
-int noteIndex = 0;
 int debounceCount = 0;
 bool switchDownCheck = false;
 
@@ -269,7 +272,7 @@ void selectNextNote() {
   shiftRegister.step();
   quantiser.setNote(shiftRegister.getNote());
   clockIO.setNextCvOut(quantiser.getCV());
-  nextNoteIndex = quantiser.getSemitone();
+  scaleState.newNote();
 }
 
 void loop() {
@@ -300,7 +303,6 @@ void loop() {
   
   if (clockIO.hasStepTicked()) {
     clockIO.ackStepTick();
-    noteIndex = nextNoteIndex;      
     selectNextNote();
   }
 }
