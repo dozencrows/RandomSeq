@@ -8,13 +8,13 @@ static const uint16_t scaleDivisors[] PROGMEM = {
 };
 
 void ShiftRegister::step() {
-  uint16_t lastBit = value_ & 0x8000;
+  uint16_t lastBit = value_ >> 15;
   value_ <<= 1;
   long randomChoice = random(32768L);
   if (randomChoice < threshold_) {
-    lastBit = ~lastBit & 0x8000;
+    lastBit ^= 1;
   }
-  value_ |= lastBit >> 15;
+  value_ |= lastBit;
 }
 
 int ShiftRegister::getNote() {
