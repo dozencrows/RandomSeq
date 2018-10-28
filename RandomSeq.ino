@@ -96,6 +96,9 @@
       - use value to select scale and set on quantiser
 
 
+  - Profiling indicates that the main loop can be executed in under
+    100 microseconds, so the clock sampling interrupt can certainly
+    be at a higher frequency - e.g. 4KHz via prescaler at 256 clocks.
 */
 #include <PureDigit.h>
 #include "ShiftRegister.h"
@@ -131,7 +134,6 @@ class UIStateThreshold : public UIState {
       if (newEncPos != encPos) {
         encPos = newEncPos;
         display();
-        
         long newThreshold = ShiftRegister::MAX_THRESHOLD * (long)encPos / MAX_ENCODER_POS;
         shiftRegister_.setThreshold(newThreshold);
       }
@@ -237,7 +239,10 @@ PureDigit digit;
 ShiftRegister shiftRegister;
 Quantiser quantiser;
 ClockIO clockIO(digit);
+
+#if defined(PROFILING)
 Profiler profiler;
+#endif
 
 UIStateThreshold thresholdState(digit, shiftRegister, quantiser);
 UIStateScale scaleState(digit, shiftRegister, quantiser);
@@ -257,18 +262,27 @@ void setup() {
   quantiser.setScale(Quantiser::Scale::MAJOR);
   selectNextNote();
   clockIO.init();
-  profiler.init();
-  
+#if defined(PROFILING)
+  profiler.init(120000L);
+#endif  
   thresholdState.init();
   scaleState.init();
   
   clockIO.start();
   uiStates[0]->select();
+
+#if defined(PROFILING)
+  Serial.begin(9600);  
+  Serial.println("###");
+  profiler.start();  
+#endif
 }
 
+#if defined(PROFILING)
 ISR(TIMER1_OVF_vect) {
   profiler.timerOverflow();
 }
+#endif
 
 ISR(TIMER2_COMPA_vect) {
   clockIO.update();
@@ -311,4 +325,8 @@ void loop() {
     clockIO.ackStepTick();
     selectNextNote();
   }
+
+#if defined(PROFILING)
+  profiler.update();
+#endif
 }

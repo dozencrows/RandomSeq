@@ -9,26 +9,31 @@ class Profiler {
 
     Profiler() {}
 
-    void init() {
+    void init(unsigned long measurementCount) {
       noInterrupts();
       TCCR1A = 0;
       TCCR1B = 0;
       TCNT1  = 0;
     
-      // (1 tick is 51.2 uSec)
       TIMSK1 |= (1 << TOIE1);                 // enable timer overflow interrupt
       interrupts();                           // enable all interrupts  
+      measurementCount_ = measurementCount;
     }
 
     void start() {
       TCNT1  = 0;
-      TCCR1B |= (1 << WGM12);                 // CTC mode
-      TCCR1B |= (1 << CS10) | (1 << CS12);    // 1024 prescaler
+      TCCR1B |= (1 << CS10);                  // 1 tick per cycle
     }
 
-    void stop() {
-      TCCR1B = 0;
-      totalTicks_ += TCNT1;
+    void update() {
+      if (measurementCount_) {
+        measurementCount_--;
+        if (!measurementCount_) {
+          TCCR1B = 0;
+          totalTicks_ += TCNT1;
+          Serial.println(totalTicks_);
+        }
+      }
     }
 
     void timerOverflow() {
@@ -37,6 +42,7 @@ class Profiler {
 
   private:
     unsigned long totalTicks_ = 0;
+    unsigned long measurementCount_;
 };
 
 #endif

@@ -1,6 +1,11 @@
 #if !defined(__CLOCKIO_H__)
 #define __CLOCKIO_H__
 
+// Set this to force the clock to step at a given number of
+// interrupts, for debugging/profiling purposes on an
+// Arduino board
+//#define DEBUG_CLOCK_RATE 100
+
 //
 // Class that manages clock input, overall timing and CV output
 //
@@ -50,7 +55,13 @@ class ClockIO {
     void update() {
       int clock = digit_.adcRead(0);
       // Clock triggers next note on rising edge, threshold around 0.5V
+#if defined(DEBUG_CLOCK_RATE)
+      static int debugClockCount = 0;
+      debugClockCount++;
+      if (debugClockCount >= DEBUG_CLOCK_RATE) {
+#else
       if (clock < 2000 && lastClock > 2000) {
+#endif
         clockCount_++;
         if (clockCount_ >= clockDivisor_) {
           clockCount_ = 0;
