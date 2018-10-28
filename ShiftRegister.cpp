@@ -27,7 +27,11 @@ int ShiftRegister::getNote() {
 }
 
 void ShiftRegister::write(bool value) {
-  
+  if (value) {
+    value_ |= 1;
+  } else {
+    value_ &= 0xfffe;
+  }
 }
 
 void ShiftRegister::setThreshold(long threshold) {

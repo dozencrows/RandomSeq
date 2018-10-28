@@ -235,6 +235,57 @@ class UIStateClockSteps : public UIState {
 
 int UIStateClockSteps::clocksPerStep_[5] = { 1, 2, 12, 24, 48 };
 
+//
+// UI state to write values into shift register
+//
+class UIStateClockWrite : public UIState {
+  enum { 
+    BASE_ENCODER_POS = 6,
+    OFFSET_DISPLAY_COUNT = 1500,
+  };
+  
+  public:
+    UIStateClockWrite(PureDigit& digit, ShiftRegister& shiftRegister, Quantiser& quantiser)
+      : UIState(digit, shiftRegister, quantiser) {}
+
+    void init() {
+    }
+
+    void select() {
+      encPos_ = BASE_ENCODER_POS;
+      display();
+    }
+
+    void update() {
+      int newEncPos = digit_.encodeVal(BASE_ENCODER_POS);
+
+      if (newEncPos < BASE_ENCODER_POS) {
+        encPos_ = BASE_ENCODER_POS - 1;
+        shiftRegister_.write(0);
+        displayCount_ = OFFSET_DISPLAY_COUNT;
+      } else if (newEncPos > BASE_ENCODER_POS) {
+        encPos_ = BASE_ENCODER_POS + 1;
+        shiftRegister_.write(1);
+        displayCount_ = OFFSET_DISPLAY_COUNT;
+      } else if (displayCount_) {
+        displayCount_--;
+        if (!displayCount_) {
+          encPos_ = BASE_ENCODER_POS;
+        }
+      }
+      display();
+    }
+
+  private:
+    int encPos_;
+    int displayCount_;
+
+    void display() {
+      digit_.displayLED(encPos_, 0, 0);
+    }
+};
+
+
 PureDigit digit;
 ShiftRegister shiftRegister;
 Quantiser quantiser;
@@ -247,8 +298,9 @@ Profiler profiler;
 UIStateThreshold thresholdState(digit, shiftRegister, quantiser);
 UIStateScale scaleState(digit, shiftRegister, quantiser);
 UIStateClockSteps clockStepsState(digit, shiftRegister, quantiser, clockIO);
+UIStateClockWrite writeState(digit, shiftRegister, quantiser);
 
-UIState* uiStates[] = { &thresholdState, &scaleState, &clockStepsState };
+UIState* uiStates[] = { &thresholdState, &scaleState, &clockStepsState, &writeState };
 
 int currentUIMode = 0;
 
@@ -260,8 +312,9 @@ void setup() {
   digit.begin();
   digit.dacWrite(quantiser.getCV());
   quantiser.setScale(Quantiser::Scale::MAJOR);
-  selectNextNote();
+  quantiser.setNote(shiftRegister.getNote());
   clockIO.init();
+  clockIO.setNextCvOut(quantiser.getCV());
 #if defined(PROFILING)
   profiler.init(120000L);
 #endif  
