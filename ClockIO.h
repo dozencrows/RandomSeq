@@ -20,15 +20,15 @@ class ClockIO {
       TCCR2B = 0;
       TCNT2  = 0;
     
-      // (1 tick is 51.2 uSec)
-      OCR2A = 19;                             // Approx 1KHz timer
+      // (1 tick is 12.8 uSec)
+      OCR2A = 19;                             // Approx 4KHz timer
       TIMSK2 |= (1 << OCIE1A);                // enable timer compare interrupt
       interrupts();                           // enable all interrupts  
     }
 
     void start() {
       TCCR2B |= (1 << WGM12);                 // CTC mode
-      TCCR2B |= (1 << CS10) | (1 << CS12);    // 1024 prescaler
+      TCCR2B |= (1 << CS12);                  // 256 prescaler
     }
 
     void stop() {
