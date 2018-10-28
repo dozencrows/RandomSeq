@@ -11,23 +11,23 @@ class ClockIO {
 
     void init() {
       noInterrupts();
-      TCCR1A = 0;
-      TCCR1B = 0;
-      TCNT1  = 0;
+      TCCR2A = 0;
+      TCCR2B = 0;
+      TCNT2  = 0;
     
       // (1 tick is 51.2 uSec)
-      OCR1A = 19;                             // Approx 1KHz timer
-      TIMSK1 |= (1 << OCIE1A);                // enable timer compare interrupt
+      OCR2A = 19;                             // Approx 1KHz timer
+      TIMSK2 |= (1 << OCIE1A);                // enable timer compare interrupt
       interrupts();                           // enable all interrupts  
     }
 
     void start() {
-      TCCR1B |= (1 << WGM12);                 // CTC mode
-      TCCR1B |= (1 << CS10) | (1 << CS12);    // 1024 prescaler
+      TCCR2B |= (1 << WGM12);                 // CTC mode
+      TCCR2B |= (1 << CS10) | (1 << CS12);    // 1024 prescaler
     }
 
     void stop() {
-      TCCR1B = 0;
+      TCCR2B = 0;
     }
 
     void setClockDivisor(int clockDivisor) {

@@ -263,7 +263,7 @@ void setup() {
   uiStates[0]->select();
 }
 
-ISR(TIMER1_COMPA_vect) {
+ISR(TIMER2_COMPA_vect) {
   clockIO.update();
 }
 
