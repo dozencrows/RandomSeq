@@ -12,7 +12,7 @@
   - Encoder:  multiple modes, stepped through by presses:
     - Mode 1: threshold        - position based
     - Mode 2: output octaves   - digit based
-    - Mode 3: clocks per step  - 1, 2, 24 or 48
+    - Mode 3: clocks per step  - 1, 2, 12, 24 or 48
     - Mode 4: write            - turn left writes 0, turn right writes 1
     - Mode 5: quantising scale - position based
 
@@ -196,7 +196,7 @@ class UIStateScale : public UIState {
 //
 class UIStateClockSteps : public UIState {
   enum { 
-    MAX_ENCODER_POS = 3
+    MAX_ENCODER_POS = 4
   };
   
   public:
@@ -226,14 +226,14 @@ class UIStateClockSteps : public UIState {
   private:
     int encPos;
     ClockIO& clockIO_;
-    static int clocksPerStep_[4];
+    static int clocksPerStep_[5];
 
     void display() {
       digit_.displayLED(encPos, 1, 0);
     }
 };
 
-int UIStateClockSteps::clocksPerStep_[4] = { 1, 2, 24, 48 };
+int UIStateClockSteps::clocksPerStep_[5] = { 1, 2, 12, 24, 48 };
 
 PureDigit digit;
 ShiftRegister shiftRegister;
