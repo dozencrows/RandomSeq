@@ -19,7 +19,7 @@ void ShiftRegister::step() {
 
 int ShiftRegister::getNote() {
   // 8-bits for full 10 octave range, like MTM Turing Machine
-  uint16_t activeBits = ((value_ & 255) << 3) + 0x100;
+  uint16_t activeBits = ((value_ & 255) << 3) + 0x4;
   uint16_t fixedValue = activeBits << 5;
   fixedValue /= scaleDivisor_;
   fixedValue += 0x10;
