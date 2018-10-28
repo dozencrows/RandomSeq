@@ -102,6 +102,7 @@
 #include "Quantiser.h"
 #include "ClockIO.h"
 #include "UIState.h"
+#include "Profiler.h"
 
 //
 // UI state to manage control of random threshold
@@ -236,6 +237,7 @@ PureDigit digit;
 ShiftRegister shiftRegister;
 Quantiser quantiser;
 ClockIO clockIO(digit);
+Profiler profiler;
 
 UIStateThreshold thresholdState(digit, shiftRegister, quantiser);
 UIStateScale scaleState(digit, shiftRegister, quantiser);
@@ -255,12 +257,17 @@ void setup() {
   quantiser.setScale(Quantiser::Scale::MAJOR);
   selectNextNote();
   clockIO.init();
+  profiler.init();
   
   thresholdState.init();
   scaleState.init();
   
   clockIO.start();
   uiStates[0]->select();
+}
+
+ISR(TIMER1_OVF_vect) {
+  profiler.timerOverflow();
 }
 
 ISR(TIMER2_COMPA_vect) {
