@@ -1,7 +1,6 @@
 /*
   GMSN! Pure Digit
   14 October 2018
-  cc-by 4.0
   Nick Tuckett
 
   Random Sequencer: Turing Machine module emulation

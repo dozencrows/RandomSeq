@@ -50,7 +50,7 @@ class ClockIO {
     void update() {
       int clock = digit_.adcRead(0);
       // Clock triggers next note on rising edge, threshold around 0.5V
-      if (clock < 2000 && lastClock > 2048) {
+      if (clock < 2000 && lastClock > 2000) {
         clockCount_++;
         if (clockCount_ >= clockDivisor_) {
           clockCount_ = 0;
