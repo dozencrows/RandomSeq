@@ -241,7 +241,7 @@ int UIStateClockSteps::clocksPerStep_[5] = { 1, 2, 12, 24, 48 };
 class UIStateClockWrite : public UIState {
   enum { 
     BASE_ENCODER_POS = 6,
-    OFFSET_DISPLAY_COUNT = 1500,
+    OFFSET_DISPLAY_COUNT = 12000,
   };
   
   public:
@@ -252,37 +252,31 @@ class UIStateClockWrite : public UIState {
     }
 
     void select() {
-      encPos_ = BASE_ENCODER_POS;
-      display();
+      displayCount_ = 0;
+      digit_.displayLEDChar('-', 0);
     }
 
     void update() {
       int newEncPos = digit_.encodeVal(BASE_ENCODER_POS);
 
       if (newEncPos < BASE_ENCODER_POS) {
-        encPos_ = BASE_ENCODER_POS - 1;
         shiftRegister_.write(0);
+        digit_.displayLED(0, 1, 0);
         displayCount_ = OFFSET_DISPLAY_COUNT;
       } else if (newEncPos > BASE_ENCODER_POS) {
-        encPos_ = BASE_ENCODER_POS + 1;
         shiftRegister_.write(1);
+        digit_.displayLED(1, 1, 0);
         displayCount_ = OFFSET_DISPLAY_COUNT;
       } else if (displayCount_) {
         displayCount_--;
         if (!displayCount_) {
-          encPos_ = BASE_ENCODER_POS;
+          digit_.displayLEDChar('-', 0);
         }
       }
-      display();
     }
 
   private:
-    int encPos_;
     int displayCount_;
-
-    void display() {
-      digit_.displayLED(encPos_, 0, 0);
-    }
 };
 
 

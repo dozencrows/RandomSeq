@@ -175,6 +175,26 @@ void PureDigit::displayOff() {
         digitalWrite(digitG, HIGH);
 }
 
+void PureDigit::displayLEDChar(char c, bool dp) {
+        if (dp == 1) {
+                digitalWrite(digitDP, LOW);
+        } else {
+                digitalWrite(digitDP, HIGH);
+        }
+
+        switch (c) {
+          case '-':
+                digitalWrite(digitA, HIGH);
+                digitalWrite(digitB, LOW);
+                digitalWrite(digitC, HIGH);
+                digitalWrite(digitD, HIGH);
+                digitalWrite(digitE, HIGH);
+                digitalWrite(digitF, HIGH);
+                digitalWrite(digitG, HIGH);
+                break;
+        }
+}
+
 void PureDigit::displayLED(int digit, byte mode, bool dp) {
         if (dp == 1) {
                 digitalWrite(digitDP, LOW);
