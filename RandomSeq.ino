@@ -100,7 +100,7 @@
     100 microseconds, so the clock sampling interrupt can certainly
     be at a higher frequency - e.g. 4KHz via prescaler at 256 clocks.
 */
-#include <PureDigit.h>
+#include "PureDigit.h"
 #include "ShiftRegister.h"
 #include "Quantiser.h"
 #include "ClockIO.h"
