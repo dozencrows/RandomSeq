@@ -35,7 +35,7 @@ void ShiftRegister::write(bool value) {
 }
 
 void ShiftRegister::setThreshold(long threshold) {
-  threshold_ = threshold;
+  threshold_ = constrain(threshold, 0, MAX_THRESHOLD);
 }
 
 void ShiftRegister::setScale(int scale) {

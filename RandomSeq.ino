@@ -112,15 +112,20 @@
 //
 class UIStateThreshold : public UIState {
   enum { 
-    MAX_ENCODER_POS = 23
+    MAX_ENCODER_POS = 23,
+    ADC_RANGE = 4096,
+    MAX_OFFSET_CV = ADC_RANGE / 4,
+    MAX_OFFSET_THRESHOLD = ShiftRegister::MAX_THRESHOLD / 2
   };
   
   public:
-    UIStateThreshold(PureDigit& digit, ShiftRegister& shiftRegister, Quantiser& quantiser)
-      : UIState(digit, shiftRegister, quantiser) {}
+    UIStateThreshold(PureDigit& digit, ShiftRegister& shiftRegister, Quantiser& quantiser, ClockIO& clockIO)
+      : UIState(digit, shiftRegister, quantiser), clockIO_(clockIO) {}
 
     void init() {
-      encPos = (MAX_ENCODER_POS + 1) / 2;
+      encPos_ = (MAX_ENCODER_POS + 1) / 2;
+      thresholdFromEncoderPos();
+      thresholdOffset_ = 0;
     }
 
     void select() {
@@ -128,22 +133,35 @@ class UIStateThreshold : public UIState {
     }
 
     void update() {
-      int newEncPos = digit_.encodeVal(encPos);
+      int newEncPos = digit_.encodeVal(encPos_);
       newEncPos = constrain(newEncPos, 0, MAX_ENCODER_POS);
 
-      if (newEncPos != encPos) {
-        encPos = newEncPos;
-        display();
-        long newThreshold = ShiftRegister::MAX_THRESHOLD * (long)encPos / MAX_ENCODER_POS;
-        shiftRegister_.setThreshold(newThreshold);
+      if (newEncPos != encPos_) {
+        encPos_ = newEncPos;
+        thresholdFromEncoderPos();
       }
+
+      int cvOffset = (ADC_RANGE / 2) - clockIO_.getCv2In();
+      thresholdOffset_ = constrain(cvOffset, -MAX_OFFSET_CV, MAX_OFFSET_CV);
+      thresholdOffset_ *= MAX_OFFSET_THRESHOLD / MAX_OFFSET_CV;
+
+      shiftRegister_.setThreshold(threshold_ + thresholdOffset_);
+      display();
     }
 
   private:
-    int encPos;
+    ClockIO& clockIO_;
+    int encPos_;
+    long threshold_;
+    long thresholdOffset_;
+
+    void thresholdFromEncoderPos() {
+      threshold_ = ShiftRegister::MAX_THRESHOLD * (long)encPos_ / MAX_ENCODER_POS;
+    }
 
     void display() {
-      digit_.displayLED(encPos / 2, 0, encPos == 0 || encPos == MAX_ENCODER_POS);
+      int displayPos = encPos_ + (thresholdOffset_ * MAX_ENCODER_POS) / ShiftRegister::MAX_THRESHOLD;
+      digit_.displayLED(displayPos / 2, 0, displayPos == 0 || displayPos == MAX_ENCODER_POS);
     }
 };
 
@@ -333,7 +351,7 @@ ClockIO clockIO(digit);
 Profiler profiler;
 #endif
 
-UIStateThreshold thresholdState(digit, shiftRegister, quantiser);
+UIStateThreshold thresholdState(digit, shiftRegister, quantiser, clockIO);
 UIStateScale scaleState(digit, shiftRegister, quantiser);
 UIStateClockSteps clockStepsState(digit, shiftRegister, quantiser, clockIO);
 UIStateClockWrite writeState(digit, shiftRegister, quantiser);

@@ -7,7 +7,7 @@
 //#define DEBUG_CLOCK_RATE 100
 
 //
-// Class that manages clock input, overall timing and CV output
+// Class that manages clock input, CV input, overall timing and CV output
 //
 class ClockIO {
   public:
@@ -52,8 +52,12 @@ class ClockIO {
       stepTicked_ = false;
     }
 
+    int getCv2In() {
+      return cv2In_;
+    }
+
     void update() {
-      int clock = digit_.adcRead(0);
+      int clock = digit_.adcRead(1);
       // Clock triggers next note on rising edge, threshold around 0.5V
 #if defined(DEBUG_CLOCK_RATE)
       static int debugClockCount = 0;
@@ -70,6 +74,8 @@ class ClockIO {
         }
       }
       lastClock = clock;
+
+      cv2In_ = digit_.adcRead(2);
     }
 
   private:
@@ -79,6 +85,7 @@ class ClockIO {
     int lastClock = 0;  
     int clockDivisor_ = 1;
     int clockCount_ = 0;
+    int cv2In_ = 0;
 };
 
 #endif
