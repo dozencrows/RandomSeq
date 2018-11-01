@@ -10,11 +10,11 @@ These instructions will get you a copy of the project up and running on your mod
 
 You'll need a Pure Digit module, the Ardunio IDE and a programmer like USBasp or the Pololu USB AVR programmer.
 
-Launch the Ardunio IDE, and open the RandomSeq sketch from this folder. You only need the standard Arduino libraries; there is a copy of the Pure Digit library included in this repo (as there are some customisations).
+Launch the Arduino IDE, and open the RandomSeq sketch from this folder. You only need the standard Arduino libraries; there is a copy of the Pure Digit library included in this repo (as there are some customisations).
 
 ### Installing
 
-Follow the instructions in the video in this thread to build and burn the code to the module: https://forum.gmsn.co.uk/t/burning-code-to-the-gmsn-pure-digital-modules/42
+Follow the instructions in this video in this thread to build and burn the code to the module: https://forum.gmsn.co.uk/t/burning-code-to-the-gmsn-pure-digital-modules/42
 
 ### Hardware Mod
 
@@ -29,6 +29,7 @@ The controls are as follows:
 * Encoder: turn to change setting values, press to cycle through settings
 * In 1:    clock input; at least peaking at +1V to synchronise.
 * In 2:    threshold offset CV; -5V to +5V offsets threshold value between -half and +half its range
+  * So if you set the threshold to mid position with the encoder, -5V on CV will offset it to its minimum and +5V on CV will offset it to its maximum.
 * Out:     quantised 1V/Octave output CV
 
 There are five settings to cycle through on the encoder:

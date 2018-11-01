@@ -376,6 +376,7 @@ void setup() {
 #endif  
   thresholdState.init();
   scaleState.init();
+  randomSeed(analogRead(0));
   
   clockIO.start();
   uiStates[0]->select();
