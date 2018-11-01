@@ -21,20 +21,28 @@ static const char minorScale[] PROGMEM = {
   0, 2, 3, 5, 7, 8, 10, 12  
 };
 
+static const char melodicMinorScale[] PROGMEM = {
+  0, 2, 3, 5, 7, 9, 11, 12  
+};
+
+static const char harmonicMinorScale[] PROGMEM = {
+  0, 2, 3, 5, 7, 8, 11, 12  
+};
+
+static const char pentScale[] PROGMEM = {
+  0, 2, 4, 7, 9, 12  
+};
+
+static const char bluesScale[] PROGMEM = {
+  0, 3, 5, 6, 7, 10, 12  
+};
+
+static const char* const scales[] PROGMEM = {
+  0, majorScale, minorScale, pentScale, bluesScale, melodicMinorScale, harmonicMinorScale
+};
+
 void Quantiser::setScale(Scale scale) {
-  switch (scale) {
-    case CHROMATIC:
-      scaleSemitones_ = 0;
-      break;
-
-    case MAJOR:
-      scaleSemitones_ = majorScale;
-      break;
-
-    case MINOR:
-      scaleSemitones_ = minorScale;
-      break;
-  }
+  scaleSemitones_ = pgm_read_word_near(scales + scale);
 }
 
 void Quantiser::setNote(int note) {

@@ -314,13 +314,15 @@ class UIStateQuantisation : public UIState {
     Quantiser::Scale scale_ = Quantiser::Scale::CHROMATIC;
 
     void display() {
-      digit_.displayLEDChar(scaleChars_[scale_], 0);
+      digit_.displayLEDChar(scaleChars_[scale_], scalePoint_[scale_]);
     }
 
     static char scaleChars_[Quantiser::SCALE_COUNT];
+    static char scalePoint_[Quantiser::SCALE_COUNT];
 };
 
-char UIStateQuantisation::scaleChars_[] = { 'C', 'M', 'm' };
+char UIStateQuantisation::scaleChars_[] = { 'C', 'M', 'm', 'P', 'b', 'm', 'H' };
+char UIStateQuantisation::scalePoint_[] = { 0,   0,   0,   0,   0,   1,   0,  };
 
 PureDigit digit;
 ShiftRegister shiftRegister;
