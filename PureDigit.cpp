@@ -192,6 +192,36 @@ void PureDigit::displayLEDChar(char c, bool dp) {
                 digitalWrite(digitF, HIGH);
                 digitalWrite(digitG, HIGH);
                 break;
+
+          case 'M':
+                digitalWrite(digitA, LOW);
+                digitalWrite(digitB, HIGH);
+                digitalWrite(digitC, LOW);
+                digitalWrite(digitD, HIGH);
+                digitalWrite(digitE, LOW);
+                digitalWrite(digitF, LOW);
+                digitalWrite(digitG, LOW);
+                break;
+
+          case 'm':
+                digitalWrite(digitA, HIGH);
+                digitalWrite(digitB, LOW);
+                digitalWrite(digitC, LOW);
+                digitalWrite(digitD, HIGH);
+                digitalWrite(digitE, LOW);
+                digitalWrite(digitF, HIGH);
+                digitalWrite(digitG, HIGH);
+                break;
+
+          case 'C':
+                digitalWrite(digitA, LOW);
+                digitalWrite(digitB, HIGH);
+                digitalWrite(digitC, LOW);
+                digitalWrite(digitD, LOW);
+                digitalWrite(digitE, HIGH);
+                digitalWrite(digitF, HIGH);
+                digitalWrite(digitG, LOW);
+                break;
         }
 }
 

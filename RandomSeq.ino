@@ -279,6 +279,48 @@ class UIStateClockWrite : public UIState {
     int displayCount_;
 };
 
+//
+// UI state to set quantiser scale
+//
+class UIStateQuantisation : public UIState {
+  enum { 
+    MAX_ENCODER_POS = Quantiser::SCALE_COUNT - 1
+  };
+  
+  public:
+    UIStateQuantisation(PureDigit& digit, ShiftRegister& shiftRegister, Quantiser& quantiser)
+      : UIState(digit, shiftRegister, quantiser) {}
+
+    void init() {
+      quantiser_.setScale(scale_);
+    }
+
+    void select() {
+      display();
+    }
+
+    void update() {
+      int newEncPos = digit_.encodeVal(scale_);
+      newEncPos = constrain(newEncPos, 0, MAX_ENCODER_POS);
+      
+      if (newEncPos != scale_) {
+        scale_ = newEncPos;
+        quantiser_.setScale(scale_);
+        display();
+      }
+    }
+
+  private:
+    Quantiser::Scale scale_ = Quantiser::Scale::CHROMATIC;
+
+    void display() {
+      digit_.displayLEDChar(scaleChars_[scale_], 0);
+    }
+
+    static char scaleChars_[Quantiser::SCALE_COUNT];
+};
+
+char UIStateQuantisation::scaleChars_[] = { 'C', 'M', 'm' };
 
 PureDigit digit;
 ShiftRegister shiftRegister;
@@ -293,8 +335,9 @@ UIStateThreshold thresholdState(digit, shiftRegister, quantiser);
 UIStateScale scaleState(digit, shiftRegister, quantiser);
 UIStateClockSteps clockStepsState(digit, shiftRegister, quantiser, clockIO);
 UIStateClockWrite writeState(digit, shiftRegister, quantiser);
+UIStateQuantisation quantiserState(digit, shiftRegister, quantiser);
 
-UIState* uiStates[] = { &thresholdState, &scaleState, &clockStepsState, &writeState };
+UIState* uiStates[] = { &thresholdState, &scaleState, &clockStepsState, &writeState, &quantiserState };
 
 int currentUIMode = 0;
 
@@ -305,7 +348,6 @@ void setup() {
   digit.dontCalibrate();
   digit.begin();
   digit.dacWrite(quantiser.getCV());
-  quantiser.setScale(Quantiser::Scale::MAJOR);
   quantiser.setNote(shiftRegister.getNote());
   clockIO.init();
   clockIO.setNextCvOut(quantiser.getCV());

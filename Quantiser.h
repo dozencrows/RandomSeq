@@ -7,7 +7,7 @@
 class Quantiser {
   public:
     enum Scale {
-      CHROMATIC, MAJOR, MINOR
+      CHROMATIC = 0, MAJOR, MINOR, SCALE_COUNT
     };
 
     void setScale(Scale scale);
